@@ -3,35 +3,46 @@ using System;
 
 public partial class Root : Node
 {
-	[Export] public bool headlessMode;
 	private static Root _instance;
 	public static Root instance
 	{
 		get { return _instance; }
 	}
+
+	[Export] private bool toggleHeadless = false;
+	public bool headlessMode = false;
+
+	public int width;
+	public int height;
 	
-	public bool testBool;
+	
 	// Called when the node enters the scene tree for the first time.
 	public override void _Ready()
 	{
 		_instance = this;
-		
-		testBool = (bool)GetMeta("testBool");
-		
-		// Creates a Node as a child of the screen.
-		Node myNode = new Node();
-		AddChild(myNode);
-		// Creates a NinePatchRect as a child of the node and makes it full screen size.
-		NinePatchRect myRect = new NinePatchRect();
-		myRect.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-		Image icon = Image.LoadFromFile("res://icon.svg");
-		ImageTexture myTexture = ImageTexture.CreateFromImage(icon);
-		myRect.Texture = myTexture;
-		myNode.AddChild(myRect);
+
+		Vector2I screenSize = GetTree().Root.Size;
+		width = screenSize.X;
+		height = screenSize.Y;
+
+		int testPanelId = UI.AddPanel(-1, width / 2, height / 2, Control.LayoutPreset.Center);
+		int testButtonId = UI.AddButton(testPanelId, "This is a button", "");
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
 	public override void _Process(double delta)
 	{
+		if (toggleHeadless != headlessMode)
+		{
+			headlessMode = toggleHeadless;
+			if (headlessMode)
+			{
+				UI.FreeNodes();
+			}
+			else
+			{
+				UI.Generate();
+			}
+		}
 	}
 }

@@ -1,5 +1,7 @@
 using Godot;
 
+#nullable enable
+
 public class PanelState
 {
 	public int ElementId { get; set; }

@@ -2,18 +2,20 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
+#nullable enable
+
 public class ManagedList<T>: IEnumerable<T>
 {
 	// The current implementation leaks memory since it's not given back when elements are removed. This can be
 	// mitigated by moving to a sparse list implementation, where the list would be subdivided into groups with higher
 	// element density as needed.
-	private readonly List<T> values;
-	private readonly Action<int, T> onAdd;
-	private readonly Action<int, T> onRemove;
+	private readonly List<T?> values;
+	private readonly Action<int, T>? onAdd;
+	private readonly Action<int, T>? onRemove;
 
 	public int Count { get { return values.Count; } }
 
-	public ManagedList(List<T> values, Action<int, T> onAdd = null, Action<int, T> onRemove = null)
+	public ManagedList(List<T?> values, Action<int, T>? onAdd = null, Action<int, T>? onRemove = null)
 	{
 		this.values = values;
 		this.onAdd = onAdd;
@@ -46,11 +48,15 @@ public class ManagedList<T>: IEnumerable<T>
 
 	public void Remove(int idx)
 	{
-        onRemove?.Invoke(idx, values[idx]);
-        values[idx] = default;
+		T? value = values[idx];
+		if (value != null)
+		{
+			onRemove?.Invoke(idx, value);
+			values[idx] = default;
+		}
 	}
 
-	public T Get(int idx)
+	public T? Get(int idx)
 	{
 		return values[idx];
 	}
