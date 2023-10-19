@@ -9,32 +9,66 @@ using Godot;
 
 public static class Serialization
 {
+    private static readonly BindingFlags anyStatic =
+        BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+
+    private static bool HasJsonIncludeAttribute(MemberInfo member)
+    {
+        return member.GetCustomAttributes(typeof(JsonIncludeAttribute), false).Any();
+    }
+
+    public static string SerializeStaticClass<T>()
+    {
+        /// <summary>
+        /// Attempts to serialize a static class into json, searching for properties and fields with the JsonInclude
+        /// attribute.
+        /// </summary>
+        Dictionary<string, string> result = new();
+
+        // Properties
+        IEnumerable<PropertyInfo> privateSerializableProperties = typeof(T)
+            .GetProperties(anyStatic)
+            .Where(HasJsonIncludeAttribute);
+        foreach (PropertyInfo property in privateSerializableProperties)
+        {
+            result[property.Name] = JsonSerializer.Serialize(property.GetValue(null));
+        }
+
+        // Fields
+        IEnumerable<FieldInfo> privateSerializableFields = typeof(T)
+            .GetFields(anyStatic)
+            .Where(HasJsonIncludeAttribute);
+        foreach (FieldInfo field in privateSerializableFields)
+        {
+            result[field.Name] = JsonSerializer.Serialize(field.GetValue(null));
+        }
+        
+        return JsonSerializer.Serialize(result);
+    }
+
     public static void DeserializeStaticClass<T>(string json)
     {
         /// <summary>
-        /// Attempts to deserialize json input and set static fields in class T.
+        /// Attempts to deserialize json input and set static fields in class T, searching for properties with the
+        /// JsonInclude attribute.
         /// </summary>
-        Dictionary<string, object?>? fieldNameAndValue = JsonSerializer.Deserialize<Dictionary<string, object?>>(json);
-        if (fieldNameAndValue == null)
+        Dictionary<string, string>? memberNameAndValue = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+        if (memberNameAndValue == null)
         {
             GD.PrintErr("DeserializeStaticClass: Unable to deserialize JSON to a dictionary.");
             return;
         }
 
-        //PropertyInfo[] publicProperties = typeof(UI).GetProperties(BindingFlags.Public | BindingFlags.Static);
-        IEnumerable<PropertyInfo> privateSerializableProperties = typeof(UI)
-            .GetProperties(BindingFlags.Static)
-            .Where(
-                (PropertyInfo property) =>
-                    property.GetCustomAttributes(typeof(JsonSerializableAttribute), false).Any()
-            );
-        //IEnumerable<PropertyInfo> allSerializableProperties = publicProperties.Concat(privateSerializableProperties);
+        // Properties
+        IEnumerable<PropertyInfo> privateSerializableProperties = typeof(T)
+            .GetProperties(anyStatic)
+            .Where(HasJsonIncludeAttribute);
         foreach (PropertyInfo property in privateSerializableProperties)
         {
-            if (fieldNameAndValue.ContainsKey(property.Name))
+            if (memberNameAndValue.ContainsKey(property.Name))
             {
-                // Null in the first argument symbolizes that the value is being set on the static class.
-                property.SetValue(null, fieldNameAndValue[property.Name]);
+                object? value = JsonSerializer.Deserialize(memberNameAndValue[property.Name], property.PropertyType);
+                property.SetValue(null, value);
             }
             else
             {
@@ -42,19 +76,16 @@ public static class Serialization
             }
         }
         
-        //FieldInfo[] publicFields = typeof(UI).GetFields(BindingFlags.Public | BindingFlags.Static);
-        IEnumerable<FieldInfo> privateSerializableFields = typeof(UI)
-            .GetFields(BindingFlags.Static)
-            .Where(
-                (FieldInfo field) =>
-                    field.GetCustomAttributes(typeof(JsonSerializableAttribute), false).Any()
-            );
-        //IEnumerable<FieldInfo> allSerializableFields = publicFields.Concat(privateSerializableFields);
+        // Fields
+        IEnumerable<FieldInfo> privateSerializableFields = typeof(T)
+            .GetFields(anyStatic)
+            .Where(HasJsonIncludeAttribute);
         foreach (FieldInfo field in privateSerializableFields)
         {
-            if (fieldNameAndValue.ContainsKey(field.Name))
+            if (memberNameAndValue.ContainsKey(field.Name))
             {
-                field.SetValue(null, fieldNameAndValue[field.Name]);
+                object? value = JsonSerializer.Deserialize(memberNameAndValue[field.Name], field.FieldType);
+                field.SetValue(null, value);
             }
             else
             {

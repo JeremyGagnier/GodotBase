@@ -1,5 +1,4 @@
 using Godot;
-using System;
 
 public partial class Root : Node
 {
@@ -12,8 +11,8 @@ public partial class Root : Node
 	[Export] private bool toggleHeadless = false;
 	public bool headlessMode = false;
 
-	public int width;
-	public int height;
+	public int screenWidth;
+	public int screenHeight;
 	
 	
 	// Called when the node enters the scene tree for the first time.
@@ -22,11 +21,18 @@ public partial class Root : Node
 		_instance = this;
 
 		Vector2I screenSize = GetTree().Root.Size;
-		width = screenSize.X;
-		height = screenSize.Y;
+		screenWidth = screenSize.X;
+		screenHeight = screenSize.Y;
 
-		int testPanelId = UI.AddPanel(-1, width / 2, height / 2, Control.LayoutPreset.Center);
-		int testButtonId = UI.AddButton(testPanelId, "This is a button", "");
+		int testPanelId = UI.AddPanel(UI.RootId, screenWidth / 2, screenHeight / 2, Control.LayoutPreset.Center);
+		int testHBoxContainerId = UI.AddHBoxContainer(testPanelId, screenWidth / 4, screenHeight / 4, Control.LayoutPreset.Center, separation: 16);
+		int testButtonId1 = UI.AddButton(testHBoxContainerId, "This is a button 1", "");
+		int testButtonId2 = UI.AddButton(testHBoxContainerId, "This is a button 2", "");
+		int testButtonId3 = UI.AddButton(testHBoxContainerId, "This is a button 3", "");
+
+		var x = UI.Serialize();
+		UI.Clear();
+		UI.Deserialize(x);
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
