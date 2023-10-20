@@ -1,4 +1,5 @@
 using Godot;
+using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
@@ -55,8 +56,18 @@ public class UI
 		new(_hBoxContainerStates, MakeHBoxContainer, UnmakeHBoxContainer);
 	public readonly static List<HBoxContainer?> hBoxContainerNodes = new();
 
+	[JsonInclude] private static List<GridContainerState?> _gridContainerStates = new();
+	public static ManagedList<GridContainerState> gridContainers =
+		new(_gridContainerStates, MakeGridContainer, UnmakeGridContainer);
+	public readonly static List<GridContainer?> gridContainerNodes = new();
+
+	[JsonInclude] private static List<TextEditState?> _textEditStates = new();
+	public static ManagedList<TextEditState> textEdits = new(_textEditStates, MakeTextEdit, UnmakeTextEdit);
+	public readonly static List<TextEdit?> textEditNodes = new();
+
 	public readonly static int RootId = -1;
 
+	#region Generic Methods
 	/// <summary>
 	/// Clears all of the UI data and frees any corresponding Godot nodes.
 	/// </summary>
@@ -66,6 +77,8 @@ public class UI
 		_buttonStates.Clear();
 		_panelStates.Clear();
 		_hBoxContainerStates.Clear();
+		_gridContainerStates.Clear();
+		_textEditStates.Clear();
 		FreeNodes();
 	}
 
@@ -86,6 +99,8 @@ public class UI
 		buttonNodes.Clear();
 		panelNodes.Clear();
 		hBoxContainerNodes.Clear();
+		gridContainerNodes.Clear();
+		textEditNodes.Clear();
 	}
 
 	/// <summary>
@@ -103,6 +118,8 @@ public class UI
 			int buttonIdx = 0;
 			int panelIdx = 0;
 			int hBoxContainerIdx = 0;
+			int gridContainerIdx = 0;
+			int textEditIdx = 0;
 			foreach (ElementState? elementState in elements)
 			{
 				switch (elementState?.Type)
@@ -135,12 +152,36 @@ public class UI
 						HBoxContainerState? hBoxContainerState = hBoxContainers.Get(hBoxContainerIdx);
 						if (hBoxContainerState == null)
 						{
-							GD.PrintErr("Found null panel state in UI.Generate.");
+							GD.PrintErr("Found null horizontal box container state in UI.Generate.");
 						}
 						else
 						{
 							MakeHBoxContainer(hBoxContainerIdx, hBoxContainerState);
 							hBoxContainerIdx += 1;
+						}
+						break;
+					case ElementType.GridContainer:
+						GridContainerState? gridContainerState = gridContainers.Get(gridContainerIdx);
+						if (gridContainerState == null)
+						{
+							GD.PrintErr("Found null grid container state in UI.Generate.");
+						}
+						else
+						{
+							MakeGridContainer(gridContainerIdx, gridContainerState);
+							gridContainerIdx += 1;
+						}
+						break;
+					case ElementType.TextEdit:
+						TextEditState? textEditState = textEdits.Get(textEditIdx);
+						if (textEditState == null)
+						{
+							GD.PrintErr("Found null text edit state in UI.Generate.");
+						}
+						else
+						{
+							MakeTextEdit(textEditIdx, textEditState);
+							textEditIdx += 1;
 						}
 						break;
 				}
@@ -162,9 +203,15 @@ public class UI
 		buttons = new(_buttonStates, MakeButton, UnmakeButton);
 		panels = new(_panelStates, MakePanel, UnmakePanel);
 		hBoxContainers = new(_hBoxContainerStates, MakeHBoxContainer, UnmakeHBoxContainer);
+		gridContainers = new(_gridContainerStates, MakeGridContainer, UnmakeGridContainer);
+		textEdits = new(_textEditStates, MakeTextEdit, UnmakeTextEdit);
 		Generate();
 	}
+	#endregion Generic Methods
 
+	#region Element Methods
+
+	#region Button
 	public static IdInfo AddButton(
 		int parentId,
 		string text,
@@ -233,6 +280,7 @@ public class UI
 			{
 				buttonState.Text = text;
 			}
+
 			if (!Root.instance.headlessMode)
 			{
 				Button? button = buttonNodes[buttonId];
@@ -315,7 +363,9 @@ public class UI
 			}
 		}
 	}
+	#endregion Button
 
+	#region Panel
 	public static IdInfo AddPanel(
 		int parentId,
 		int width,
@@ -341,6 +391,75 @@ public class UI
 		};
 		int panelId = panels.Add(panelState);
 		return new() { ElementId = elementId, ComponentId = panelId };
+	}
+
+	public static void ModifyPanel(
+		int panelId,
+		int? width = null,
+		int? height = null,
+		Control.LayoutPreset? layoutPreset = null,
+		int? margin = null,
+		bool? visible = null)
+	{
+		PanelState? panelState = panels.Get(panelId);
+		if (panelState == null)
+		{
+			GD.PrintErr("Tried to edit a panel that was removed.");
+		}
+		else
+		{
+			if (width != null)
+			{
+				panelState.Width = width.Value;
+			}
+			if (height != null)
+			{
+				panelState.Height = height.Value;
+			}
+			if (layoutPreset != null)
+			{
+				panelState.LayoutPreset = layoutPreset.Value;
+			}
+			if (margin != null)
+			{
+				panelState.Margin = margin.Value;
+			}
+			if (visible != null)
+			{
+				ElementState? elementState = elements.Get(panelState.ElementId);
+				if (elementState == null)
+				{
+					GD.PrintErr("Tried to edit a panel whose element was removed.");
+				}
+				else
+				{
+					elementState.Visible = visible.Value;
+				}
+			}
+
+			if (!Root.instance.headlessMode)
+			{
+				Panel? panel = panelNodes[panelId];
+				if (panel != null)
+				{
+					if (visible != null)
+					{
+						panel.Visible = visible.Value;
+					}
+					if (width != null || height != null)
+					{
+						panel.Size = new(panelState.Width, panelState.Height);
+					}
+					if (width != null || height != null || layoutPreset != null || margin != null)
+					{
+						panel.SetAnchorsAndOffsetsPreset(
+							panelState.LayoutPreset,
+							margin: panelState.Margin,
+							resizeMode: Control.LayoutPresetMode.KeepSize);
+					}
+				}
+			}
+		}
 	}
 
 	public static void RemovePanel(int panelId)
@@ -400,7 +519,9 @@ public class UI
 			}
 		}
 	}
+	#endregion Panel
 
+	#region HBoxContainer
 	public static IdInfo AddHBoxContainer(
 		int parentId,
 		int width,
@@ -428,6 +549,84 @@ public class UI
 		};
 		int hBoxContainerId = hBoxContainers.Add(hBoxContainerState);
 		return new() { ElementId = elementId, ComponentId = hBoxContainerId };
+	}
+
+	public static void ModifyHBoxContainer(
+		int hBoxContainerId,
+		int? width = null,
+		int? height = null,
+		Control.LayoutPreset? layoutPreset = null,
+		int? separation = null,
+		int? margin = null,
+		bool? visible = null)
+	{
+		HBoxContainerState? hBoxContainerState = hBoxContainers.Get(hBoxContainerId);
+		if (hBoxContainerState == null)
+		{
+			GD.PrintErr("Tried to edit a horizontal box container that was removed.");
+		}
+		else
+		{
+			if (width != null)
+			{
+				hBoxContainerState.Width = width.Value;
+			}
+			if (height != null)
+			{
+				hBoxContainerState.Height = height.Value;
+			}
+			if (layoutPreset != null)
+			{
+				hBoxContainerState.LayoutPreset = layoutPreset.Value;
+			}
+			if (separation != null)
+			{
+				hBoxContainerState.Separation = separation.Value;
+			}
+			if (margin != null)
+			{
+				hBoxContainerState.Margin = margin.Value;
+			}
+			if (visible != null)
+			{
+				ElementState? elementState = elements.Get(hBoxContainerState.ElementId);
+				if (elementState == null)
+				{
+					GD.PrintErr("Tried to edit a horizontal box container whose element was removed.");
+				}
+				else
+				{
+					elementState.Visible = visible.Value;
+				}
+			}
+
+			if (!Root.instance.headlessMode)
+			{
+				HBoxContainer? hBoxContainer = hBoxContainerNodes[hBoxContainerId];
+				if (hBoxContainer != null)
+				{
+					if (visible != null)
+					{
+						hBoxContainer.Visible = visible.Value;
+					}
+					if (width != null || height != null)
+					{
+						hBoxContainer.Size = new(hBoxContainerState.Width, hBoxContainerState.Height);
+					}
+					if (width != null || height != null || layoutPreset != null || margin != null)
+					{
+						hBoxContainer.SetAnchorsAndOffsetsPreset(
+							hBoxContainerState.LayoutPreset,
+							margin: hBoxContainerState.Margin,
+							resizeMode: Control.LayoutPresetMode.KeepSize);
+					}
+					if (separation != null)
+					{
+						hBoxContainer.AddThemeConstantOverride("separation", separation.Value);
+					}
+				}
+			}
+		}
 	}
 
 	public static void RemoveHBoxContainer(int hBoxContainerId)
@@ -479,16 +678,379 @@ public class UI
 		}
 	}
 
-	private static void UnmakeHBoxContainer(int hBoxContainerId, HBoxContainerState hBoxContainer)
+	private static void UnmakeHBoxContainer(int hBoxContainerId, HBoxContainerState hBoxContainerState)
 	{
 		if (!Root.instance.headlessMode)
 		{
-			Node? node = elementNodes[hBoxContainer.ElementId];
+			Node? node = elementNodes[hBoxContainerState.ElementId];
 			if (node != null)
 			{
 				node.QueueFree();
-				elementNodes[hBoxContainer.ElementId] = null;
+				elementNodes[hBoxContainerState.ElementId] = null;
 			}
 		}
 	}
+	#endregion HBoxContainer
+
+	#region GridContainer
+	public static IdInfo AddGridContainer(
+		int parentId,
+		int width,
+		int height,
+		int columns,
+		Control.LayoutPreset layoutPreset,
+		int? hSeparation = null,
+		int? vSeparation = null,
+		int margin = 0,
+		bool visible = true)
+	{
+		ElementState elementState = new()
+		{
+			Type = ElementType.GridContainer,
+			ParentId = parentId,
+			Visible = visible,
+		};
+		int elementId = elements.Add(elementState);
+		GridContainerState gridContainerState = new()
+		{
+			ElementId = elementId,
+			Width = width,
+			Height = height,
+			Margin = margin,
+			Columns = columns,
+			HSeparation = hSeparation,
+			VSeparation = vSeparation,
+			LayoutPreset = layoutPreset,
+		};
+		int gridContainerId = gridContainers.Add(gridContainerState);
+		return new() { ElementId = elementId, ComponentId = gridContainerId };
+	}
+
+	public static void ModifyGridContainer(
+		int gridContainerId,
+		int? width = null,
+		int? height = null,
+		int? columns = null,
+		Control.LayoutPreset? layoutPreset = null,
+		int? hSeparation = null,
+		int? vSeparation = null,
+		int? margin = null,
+		bool? visible = null)
+	{
+		GridContainerState? gridContainerState = gridContainers.Get(gridContainerId);
+		if (gridContainerState == null)
+		{
+			GD.PrintErr("Tried to edit a grid container that was removed.");
+		}
+		else
+		{
+			if (width != null)
+			{
+				gridContainerState.Width = width.Value;
+			}
+			if (height != null)
+			{
+				gridContainerState.Height = height.Value;
+			}
+			if (columns != null)
+			{
+				gridContainerState.Columns = columns.Value;
+			}
+			if (layoutPreset != null)
+			{
+				gridContainerState.LayoutPreset = layoutPreset.Value;
+			}
+			if (hSeparation != null)
+			{
+				gridContainerState.HSeparation = hSeparation.Value;
+			}
+			if (vSeparation != null)
+			{
+				gridContainerState.VSeparation = vSeparation.Value;
+			}
+			if (margin != null)
+			{
+				gridContainerState.Margin = margin.Value;
+			}
+			if (visible != null)
+			{
+				ElementState? elementState = elements.Get(gridContainerState.ElementId);
+				if (elementState == null)
+				{
+					GD.PrintErr("Tried to edit a grid container whose element was removed.");
+				}
+				else
+				{
+					elementState.Visible = visible.Value;
+				}
+			}
+
+			if (!Root.instance.headlessMode)
+			{
+				GridContainer? gridContainer = gridContainerNodes[gridContainerId];
+				if (gridContainer != null)
+				{
+					if (visible != null)
+					{
+						gridContainer.Visible = visible.Value;
+					}
+					if (columns != null)
+					{
+						gridContainer.Columns = columns.Value;
+					}
+					if (width != null || height != null)
+					{
+						gridContainer.Size = new(gridContainerState.Width, gridContainerState.Height);
+					}
+					if (width != null || height != null || layoutPreset != null || margin != null)
+					{
+						gridContainer.SetAnchorsAndOffsetsPreset(
+							gridContainerState.LayoutPreset,
+							margin: gridContainerState.Margin,
+							resizeMode: Control.LayoutPresetMode.KeepSize);
+					}
+					if (hSeparation != null)
+					{
+						gridContainer.AddThemeConstantOverride("h_separation", hSeparation.Value);
+					}
+					if (vSeparation != null)
+					{
+						gridContainer.AddThemeConstantOverride("v_separation", vSeparation.Value);
+					}
+				}
+			}
+		}
+	}
+
+	public static void RemoveGridContainer(int gridContainerId)
+	{
+		GridContainerState? gridContainerState = gridContainers.Get(gridContainerId);
+		if (gridContainerState != null)
+		{
+			elements.Remove(gridContainerState.ElementId);
+			gridContainers.Remove(gridContainerId);
+		}
+	}
+
+	private static void MakeGridContainer(int gridContainerId, GridContainerState gridContainerState)
+	{
+		if (!Root.instance.headlessMode)
+		{
+			ElementState? elementState = elements.Get(gridContainerState.ElementId);
+			if (elementState != null)
+			{
+				Node? parentNode;
+				if (elementState.ParentId == -1)
+				{
+					parentNode = Root.instance;
+				}
+				else
+				{
+					parentNode = elementNodes[elementState.ParentId];
+				}
+				if (parentNode != null)
+				{
+					GridContainer gridContainer = new()
+					{
+						Visible = elementState.Visible,
+						Size = new Vector2(gridContainerState.Width, gridContainerState.Height),
+						Columns = gridContainerState.Columns,
+					};
+					if (gridContainerState.HSeparation != null)
+					{
+						gridContainer.AddThemeConstantOverride("h_separation", gridContainerState.HSeparation.Value);
+					}
+					if (gridContainerState.VSeparation != null)
+					{
+						gridContainer.AddThemeConstantOverride("v_separation", gridContainerState.VSeparation.Value);
+					}
+					gridContainer.SetAnchorsAndOffsetsPreset(
+						gridContainerState.LayoutPreset,
+						margin: gridContainerState.Margin,
+						resizeMode: Control.LayoutPresetMode.KeepSize);
+					parentNode.AddChild(gridContainer);
+					elementNodes.Add(gridContainer);
+					gridContainerNodes.Add(gridContainer);
+				}
+			}
+		}
+	}
+
+	private static void UnmakeGridContainer(int gridContainerId, GridContainerState gridContainerState)
+	{
+		if (!Root.instance.headlessMode)
+		{
+			Node? node = elementNodes[gridContainerState.ElementId];
+			if (node != null)
+			{
+				node.QueueFree();
+				elementNodes[gridContainerState.ElementId] = null;
+			}
+		}
+	}
+	#endregion GridContainer
+
+	#region TextEdit
+	public static IdInfo AddTextEdit(
+		int parentId,
+		string onChangeActionName,
+		bool editable = true,
+		string text = "",
+		string placeholderText = "",
+		bool visible = true)
+	{
+		ElementState elementState = new()
+		{
+			Type = ElementType.TextEdit,
+			ParentId = parentId,
+			Visible = visible,
+		};
+		int elementId = elements.Add(elementState);
+		TextEditState textEditState = new()
+		{
+			ElementId = elementId,
+			Editable = editable,
+			Text = text,
+			PlaceholderText = placeholderText,
+			OnChangeActionName = onChangeActionName,
+		};
+		int textEditId = textEdits.Add(textEditState);
+		return new() { ElementId = elementId, ComponentId = textEditId };
+	}
+
+	public static void ModifyTextEdit(
+		int textEditId,
+		string? onChangeActionName = null,
+		bool? editable = null,
+		string? text = null,
+		string? placeholderText = null,
+		bool? visible = null)
+	{
+		TextEditState? textEditState = textEdits.Get(textEditId);
+		if (textEditState == null)
+		{
+			GD.PrintErr("Tried to edit a text edit that was removed.");
+		}
+		else
+		{
+			string previousOnChangeActionName = textEditState.OnChangeActionName;
+			if (onChangeActionName != null)
+			{
+				textEditState.OnChangeActionName = onChangeActionName;
+			}
+			if (editable != null)
+			{
+				textEditState.Editable = editable.Value;
+			}
+			if (text != null)
+			{
+				textEditState.Text = text;
+			}
+			if (placeholderText != null)
+			{
+				textEditState.PlaceholderText = placeholderText;
+			}
+			if (visible != null)
+			{
+				ElementState? elementState = elements.Get(textEditState.ElementId);
+				if (elementState == null)
+				{
+					GD.PrintErr("Tried to edit a text edit whose element was removed.");
+				}
+				else
+				{
+					elementState.Visible = visible.Value;
+				}
+			}
+
+			if (!Root.instance.headlessMode)
+			{
+				TextEdit? textEdit = textEditNodes[textEditId];
+				if (textEdit != null)
+				{
+					if (visible != null)
+					{
+						textEdit.Visible = visible.Value;
+					}
+					if (editable != null)
+					{
+						textEdit.Editable = editable.Value;
+					}
+					if (text != null)
+					{
+						textEdit.Text = text;
+					}
+					if (placeholderText != null)
+					{
+						textEdit.PlaceholderText = placeholderText;
+					}
+					if (onChangeActionName != null)
+					{
+						textEdit.TextChanged -= UIActions.textActions[previousOnChangeActionName];
+						textEdit.TextChanged += UIActions.textActions[textEditState.OnChangeActionName];
+					}
+				}
+			}
+		}
+	}
+
+	public static void RemoveTextEdit(int textEditId)
+	{
+		TextEditState? textEditState = textEdits.Get(textEditId);
+		if (textEditState != null)
+		{
+			elements.Remove(textEditState.ElementId);
+			textEdits.Remove(textEditId);
+		}
+	}
+
+	private static void MakeTextEdit(int textEditId, TextEditState textEditState)
+	{
+		if (!Root.instance.headlessMode)
+		{
+			ElementState? elementState = elements.Get(textEditState.ElementId);
+			if (elementState != null)
+			{
+				Node? parentNode;
+				if (elementState.ParentId == -1)
+				{
+					parentNode = Root.instance;
+				}
+				else
+				{
+					parentNode = elementNodes[elementState.ParentId];
+				}
+				if (parentNode != null)
+				{
+					TextEdit textEdit = new()
+					{
+						Visible = elementState.Visible,
+						Editable = textEditState.Editable,
+						Text = textEditState.Text,
+						PlaceholderText = textEditState.PlaceholderText,
+					};
+					textEdit.TextChanged += UIActions.textActions[textEditState.OnChangeActionName];
+					parentNode.AddChild(textEdit);
+					elementNodes.Add(textEdit);
+					textEditNodes.Add(textEdit);
+				}
+			}
+		}
+	}
+
+	private static void UnmakeTextEdit(int textEditId, TextEditState textEditState)
+	{
+		if (!Root.instance.headlessMode)
+		{
+			Node? node = elementNodes[textEditState.ElementId];
+			if (node != null)
+			{
+				node.QueueFree();
+				elementNodes[textEditState.ElementId] = null;
+			}
+		}
+	}
+	#endregion TextEdit
+
+	#endregion Element Methods
 }

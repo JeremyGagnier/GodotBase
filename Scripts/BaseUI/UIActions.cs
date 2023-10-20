@@ -16,4 +16,8 @@ public static class UIActions
 	public readonly static Dictionary<string, Action> buttonActions = new() {
 		{"", () => {}},
 	};
+
+	public readonly static Dictionary<string, Action> textActions = new() {
+		{"", () => {}},
+	};
 }

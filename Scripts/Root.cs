@@ -24,11 +24,11 @@ public partial class Root : Node
 		screenWidth = screenSize.X;
 		screenHeight = screenSize.Y;
 
-		int testPanelId = UI.AddPanel(UI.RootId, screenWidth / 2, screenHeight / 2, Control.LayoutPreset.Center);
-		int testHBoxContainerId = UI.AddHBoxContainer(testPanelId, screenWidth / 4, screenHeight / 4, Control.LayoutPreset.Center, separation: 16);
-		int testButtonId1 = UI.AddButton(testHBoxContainerId, "This is a button 1", "");
-		int testButtonId2 = UI.AddButton(testHBoxContainerId, "This is a button 2", "");
-		int testButtonId3 = UI.AddButton(testHBoxContainerId, "This is a button 3", "");
+		int testPanelId = UI.AddPanel(UI.RootId, screenWidth / 2, screenHeight / 2, Control.LayoutPreset.Center).ElementId;
+		int testHBoxContainerId = UI.AddHBoxContainer(testPanelId, screenWidth / 4, screenHeight / 4, Control.LayoutPreset.Center, separation: 16).ElementId;
+		int testButtonId1 = UI.AddButton(testHBoxContainerId, "This is a button 1", "").ElementId;
+		int testButtonId2 = UI.AddButton(testHBoxContainerId, "This is a button 2", "").ElementId;
+		int testButtonId3 = UI.AddButton(testHBoxContainerId, "This is a button 3", "").ElementId;
 
 		var x = UI.Serialize();
 		UI.Clear();
