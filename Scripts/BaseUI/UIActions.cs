@@ -11,13 +11,21 @@ using System.Collections.Generic;
 /// button (which can be serialized because it is a string) and then statically adding the corresponding action to the
 /// buttonActions dictionary here.
 /// </summary>
-public static class UIActions
+/// 
+namespace Base
 {
-	public readonly static Dictionary<string, Action> buttonActions = new() {
-		{"", () => {}},
-	};
+	public static class UIActions
+	{
+		public readonly static Dictionary<string, Action> buttonActions = new() {
+			{"", () => {}},
+			{"TitleScreen.PressedPlay", TitleScreen.PressedPlay},
+			{"TitleScreen.PressedInstructions", TitleScreen.PressedInstructions},
+			{"TitleScreen.PressedOptions", TitleScreen.PressedOptions},
+			{"TitleScreen.PressedExit", TitleScreen.PressedExit},
+		};
 
-	public readonly static Dictionary<string, Action> textActions = new() {
-		{"", () => {}},
-	};
+		public readonly static Dictionary<string, Action> textActions = new() {
+			{"", () => {}},
+		};
+	}
 }

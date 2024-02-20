@@ -12,8 +12,8 @@ config_version=5
 
 config/name="Godot Base"
 run/main_scene="res://game.tscn"
-config/features=PackedStringArray("4.1", "C#", "Forward Plus")
-config/icon="res://icon.svg"
+config/features=PackedStringArray("4.2", "C#", "Forward Plus")
+boot_splash/show_image=false
 
 [display]
 
@@ -24,3 +24,7 @@ window/stretch/mode="canvas_items"
 [dotnet]
 
 project/assembly_name="Godot Base"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/GDMUT/plugin.cfg")
