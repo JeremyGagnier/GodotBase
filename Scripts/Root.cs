@@ -31,10 +31,11 @@ namespace Base
 			TitleScreen.Init();
 
 			// TODO: Remove below, for testing only
-			TitleScreen.Open();
-			var x = UI.Serialize();
-			UI.Clear();
-			UI.Deserialize(x);
+			//TitleScreen.Open();
+			//var x = UI.Serialize();
+			//UI.Clear();
+			//UI.Deserialize(x);
+			EvolutionGame.HeightMesh.MakeMesh();
 		}
 
 		public override void _Process(double delta)

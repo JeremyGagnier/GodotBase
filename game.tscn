@@ -1,6 +1,9 @@
-[gd_scene load_steps=2 format=3 uid="uid://b6dau5mulf20o"]
+[gd_scene load_steps=4 format=3 uid="uid://b6dau5mulf20o"]
 
 [ext_resource type="Script" path="res://Scripts/Root.cs" id="1_rs3y4"]
+[ext_resource type="Material" uid="uid://dbjwvhx8ywkim" path="res://Materials/3d_mat.tres" id="2_af0ff"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_q2rln"]
 
 [node name="Root" type="Control"]
 layout_mode = 3
@@ -10,3 +13,15 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_rs3y4")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.707107, 0.5, 0.5, 0, 0.707107, -0.707107, -0.707107, 0.5, 0.5, 0, 0, -5)
+mesh = SubResource("BoxMesh_q2rln")
+surface_material_override/0 = ExtResource("2_af0ff")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 100, 0)
+light_energy = 0.5
+sky_mode = 1
