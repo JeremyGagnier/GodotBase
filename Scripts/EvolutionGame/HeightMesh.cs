@@ -206,7 +206,7 @@ namespace EvolutionGame
 				originHeightDiff = -1,
 			}, new() {
 				points = bottomRightBumpPoints,
-				heightAdjustment = 0,
+				heightAdjustment = -1,
 				bottomEdge = UP,
 				rightEdge = UP,
 			}},
@@ -307,7 +307,7 @@ namespace EvolutionGame
 			}, new() {
 				points = topLeftDipPoints,
 				heightAdjustment = -1,
-				bottomEdge = UP,
+				bottomEdge = FLAT,
 				rightEdge = FLAT,
 			}},
 		};
@@ -321,28 +321,28 @@ namespace EvolutionGame
 			List<Vector3> points = new();
 
 			FastNoiseLite noise = new();
-			int smoothness = 2;
-			int maxHeight = 10;
+			float smoothness = 0.5f;
+			float maxHeight = 10;
 			float[] heightmap = new float[10 * 10];
-			/*for (int y = 0; y < 10; y += 1)
+			for (int y = 0; y < 10; y += 1)
 			{
 				for (int x = 0; x < 10; x += 1)
 				{
-					heightmap[x + y * 10] = noise.GetNoise2D((float)x / smoothness, (float)y / smoothness) * maxHeight;
+					heightmap[x + y * 10] = noise.GetNoise2D(x / smoothness, y / smoothness) * maxHeight;
 				}
-			}*/
-			heightmap = new float[]{
+			}
+			/*heightmap = new float[]{
+				0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+				0, -1, -1, 0, 0, 0, 0, -1, -1, 0,
+				0, -1, 0, 0, 0, 0, 0, -1, -1, 0,
+				0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+				0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 				0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 				0, -1, -1, 0, 0, 0, 0, -1, -1, 0,
 				0, -1, -1, 0, 0, 0, 0, -1, -1, 0,
 				0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-				0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-				0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-				0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-				0, -1, -1, 0, 0, 0, 0, -1, -1, 0,
-				0, -1, -1, 0, 0, 0, 0, -1, -1, 0,
-				0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-			};
+			};*/
 
 			TileData[] tileData = new TileData[11 * 11];
 			for (int i = 0; i < 10; ++i)
@@ -360,7 +360,6 @@ namespace EvolutionGame
 					int originHeight = tileData[x + y * 11].nextOriginHeight;
 					Vector3[] newPoints;
 					int heightAdjustment = 0;
-					GD.Print(string.Format("x:{0} y:{1} hd:{2} top:{3} left:{4}", x, y, (originHeight - height).ToString(), top.bottomType, left.rightType));
 					
 					TileIndex tileIndex = new() {
 						upType = top.bottomType,
